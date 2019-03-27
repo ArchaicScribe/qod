@@ -1,12 +1,15 @@
 package edu.cnm.deepdive.qod.model.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import edu.cnm.deepdive.qod.view.FlatQuote;
 import edu.cnm.deepdive.qod.view.FlatSource;
+import java.net.URI;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
+import javax.annotation.PostConstruct;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -17,14 +20,21 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.GenericGenerator;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.EntityLinks;
 import org.springframework.lang.NonNull;
+import org.springframework.stereotype.Component;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
+@Component
 @Entity
 public class Source implements FlatSource {
 
+  private static EntityLinks entityLinks;
+
   @Id
   @GeneratedValue(generator = "uuid2")
-  @GenericGenerator(name = "uuid", strategy = "uuid2")
+  @GenericGenerator(name = "uuid2", strategy = "uuid2")
   @Column(name = "source_id", columnDefinition = "CHAR(16) FOR BIT DATA",
       nullable = false, updatable = false)
   private UUID id;
@@ -39,10 +49,8 @@ public class Source implements FlatSource {
   @Column(length = 1024, nullable = false, unique = true)
   private String name;
 
-
   @JsonSerialize(contentAs = FlatQuote.class)
   @OneToMany(mappedBy = "source", fetch = FetchType.EAGER)
-
   private List<Quote> quotes = new LinkedList<>();
 
   public UUID getId() {
@@ -68,4 +76,19 @@ public class Source implements FlatSource {
   public void setQuotes(List<Quote> quotes) {
     this.quotes = quotes;
   }
+
+  @PostConstruct
+  private void init() {
+    String ignore = entityLinks.toString();
+  }
+
+  @Autowired
+  private void setEntityLinks(EntityLinks entityLinks) {
+    Source.entityLinks = entityLinks;
+  }
+
+  public URI getHref() {
+    return entityLinks.linkForSingleResource(Source.class, id).toUri();
+  }
+
 }
